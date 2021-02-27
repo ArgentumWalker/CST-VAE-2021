@@ -24,10 +24,12 @@ class RawImagesDataset(Dataset):
             tmp = random.randint(0, img.shape[1] - self.crop_to)
             img = img[:, tmp:self.crop_to + tmp]
 
+        img = torch.tensor(img, dtype=torch.float)
+
         # Flip if needed
         if self.flip_augmentation and random.random() > 0.5:
-            img = np.flip(img, 1)
-        return torch.tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB) / 255., dtype=torch.float).transpose(0, 2)
+            img.flip([1])
+        return img.flip([2]).transpose(0, 2) / 255.
 
     def __len__(self):
         return len(self.paths)

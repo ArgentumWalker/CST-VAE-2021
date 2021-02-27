@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 import wandb
 from tqdm import tqdm
+import time
 
 
 def build_images_to_log(vae:VAE, source):
@@ -31,6 +32,21 @@ def build_images_to_log(vae:VAE, source):
     return log_dict
 
 
+def compute_with_noised(z, vae):
+    z_noised = [torch.randn_like(zz) for zz in z]
+    zs = [z]
+    for j in reversed(range(len(z))):
+        if j == 0:
+            continue
+        z_noised[j] = z[j]
+        zs.append([zz for zz in z_noised])
+    z_noised = [torch.cat(list(zz), dim=0) for zz in zip(*zs)]
+    xs_rec = vae.decode(z_noised).split(z[0].size(0))
+    x_rec = xs_rec[0]
+    x_rec_noised = xs_rec[1:]
+    return x_rec, x_rec_noised
+
+
 def train_vae(vae:VAE, dataset, dataloader_workers=8, lr=5e-5, kld_coef=0.1, noised_coef=0.2, epochs=400,
               batches_per_epoch=500, batch_size=6, log_images_every=5):
     wandb.init(project="CST-GAN-2021")
@@ -40,17 +56,15 @@ def train_vae(vae:VAE, dataset, dataloader_workers=8, lr=5e-5, kld_coef=0.1, noi
 
     for i in range(epochs):
         for k in tqdm(range(batches_per_epoch)):
-            x = next(iter(dataloader)).cuda()
-            x_rec, z, kld = vae(x)
-            z_noised = [torch.randn_like(zz) for zz in z]
+            get_batch_time = 0.
 
-            noised_losses = []
-            for j in reversed(range(len(z))):
-                if j == 0:
-                    continue
-                z_noised[j] = z[j]
-                x_rec_noised = vae.decode(z_noised)
-                noised_losses.append(((x - x_rec_noised)**2).sum((-1, -2, -3)))
+            tmp = time.time()
+            x = next(iter(dataloader)).cuda()
+            get_batch_time += time.time() - tmp
+            z, kld = vae(x)
+            x_rec, x_rec_noised = compute_with_noised(z, vae)
+
+            noised_losses = [((x - xr)**2).sum((-1, -2, -3)) for xr in x_rec_noised]
             rec_noised_loss = torch.stack(noised_losses).mean()
 
             kld_loss = kld.mean()
@@ -58,6 +72,9 @@ def train_vae(vae:VAE, dataset, dataloader_workers=8, lr=5e-5, kld_coef=0.1, noi
 
             scale_factor = x.size(-1) * x.size(-2)
             loss = (rec_loss + kld_coef * kld_loss + noised_coef * rec_noised_loss) / scale_factor
+
+            for param in vae.parameters():
+                param.grad = None
             optim.zero_grad()
             loss.backward()
             optim.step()
@@ -65,7 +82,9 @@ def train_vae(vae:VAE, dataset, dataloader_workers=8, lr=5e-5, kld_coef=0.1, noi
             wandb.log({"kld_loss": kld_loss.detach().cpu().item(),
                        "rec_loss": rec_loss.detach().cpu().item(),
                        "rec_noised_loss": rec_noised_loss.detach().cpu().item(),
-                       "loss": loss.detach().cpu().item()}, step=i*batches_per_epoch + k + 1)
+                       "loss": loss.detach().cpu().item(),
+                       "get_batch_time": get_batch_time,
+                       "step": i*batches_per_epoch + k + 1}, step=i*batches_per_epoch + k + 1)
 
         if i % log_images_every == 0:
             wandb.log(build_images_to_log(vae, test_images), step=(i+1) * batches_per_epoch)

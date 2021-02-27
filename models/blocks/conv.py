@@ -7,9 +7,9 @@ class DownsamplingConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=2),
-            nn.ELU(),
-            nn.InstanceNorm2d(out_channels)
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.ELU()
         )
 
     def forward(self, x):
@@ -20,14 +20,14 @@ class UnetDownsamplingConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, skip_channels):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=2),
-            nn.ELU(),
-            nn.InstanceNorm2d(out_channels)
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=2, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.ELU()
         )
         self.skip_model = nn.Sequential(
-            nn.Conv2d(out_channels, skip_channels, kernel_size=3, padding=1),
-            nn.ELU(),
-            nn.InstanceNorm2d(skip_channels)
+            nn.Conv2d(out_channels, skip_channels, kernel_size=3, padding=1, bias=False),
+            nn.InstanceNorm2d(skip_channels),
+            nn.ELU()
         )
 
     def forward(self, x):
@@ -65,9 +65,9 @@ class UpsamplingConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.model = nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, padding=1, stride=2),
-            nn.ELU(),
-            nn.InstanceNorm2d(out_channels)
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, padding=1, stride=2, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.ELU()
         )
 
     def forward(self, x):
@@ -78,15 +78,15 @@ class UnetUpsamplingConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, skip_channels):
         super().__init__()
         self.skip_model = nn.Sequential(
-            nn.Conv2d(skip_channels, in_channels, kernel_size=3, padding=1),
-            nn.ELU(),
-            nn.InstanceNorm2d(in_channels)
+            nn.Conv2d(skip_channels, in_channels, kernel_size=3, padding=1, bias=False),
+            nn.InstanceNorm2d(in_channels),
+            nn.ELU()
         )
 
         self.model = nn.Sequential(
-            nn.ConvTranspose2d(2 * in_channels, out_channels, kernel_size=4, padding=1, stride=2),
-            nn.ELU(),
-            nn.InstanceNorm2d(out_channels)
+            nn.ConvTranspose2d(2 * in_channels, out_channels, kernel_size=4, padding=1, stride=2, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.ELU()
         )
 
     def forward(self, x, skip):

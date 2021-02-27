@@ -89,8 +89,7 @@ class VAE(nn.Module):
 
     def forward(self, x):
         z, kld = self.encoder(x)
-        x = self.decoder(z)
-        return x, z, kld
+        return z, kld
 
     def encode(self, x):
         return self.encoder(x)[0]
