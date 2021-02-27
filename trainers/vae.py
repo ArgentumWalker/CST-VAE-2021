@@ -55,12 +55,20 @@ def train_vae(vae:VAE, dataset, dataloader_workers=8, lr=5e-5, kld_coef=0.1, noi
     test_images = torch.stack([dataset[1723], dataset[841], dataset[9212], dataset[33443], dataset[24631]]).cuda()
 
     for i in range(epochs):
+        data_iter = iter(dataloader)
         for k in tqdm(range(batches_per_epoch)):
             get_batch_time = 0.
+            load_batch_time = 0.
 
             tmp = time.time()
-            x = next(iter(dataloader)).cuda()
+            x = next(data_iter)
+            if x is None:
+                data_iter = iter(dataloader)
+                x = next(data_iter)
             get_batch_time += time.time() - tmp
+            tmp = time.time()
+            x = x.cuda()
+            load_batch_time += time.time() - tmp
             z, kld = vae(x)
             x_rec, x_rec_noised = compute_with_noised(z, vae)
 
@@ -84,6 +92,7 @@ def train_vae(vae:VAE, dataset, dataloader_workers=8, lr=5e-5, kld_coef=0.1, noi
                        "rec_noised_loss": rec_noised_loss.detach().cpu().item(),
                        "loss": loss.detach().cpu().item(),
                        "get_batch_time": get_batch_time,
+                       "load_batch_time": load_batch_time,
                        "step": i*batches_per_epoch + k + 1}, step=i*batches_per_epoch + k + 1)
 
         if i % log_images_every == 0:

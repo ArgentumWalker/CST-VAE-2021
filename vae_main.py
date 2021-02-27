@@ -6,5 +6,5 @@ from utils.pytorch import init_torch
 if __name__ == "__main__":
     init_torch()
     vae = VAE().cuda()
-    dataset = RawImagesDataset("/home/argentumwalker/hdd/CST-VAE/data/deviantart")
-    train_vae(vae, dataset, dataloader_workers=2, batch_size=16, lr=1e-4, epochs=400)
+    dataset = RawImagesDataset("/home/argentumwalker/Projects/#DATA/deviantart")
+    train_vae(vae, dataset, dataloader_workers=4, batch_size=4, lr=1e-4, epochs=400)
