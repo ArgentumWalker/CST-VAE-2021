@@ -101,7 +101,7 @@ class ClassicStyledEncoder(nn.Module):
             self.downsamplings.append(StyledSkipDownsampling(ds_start_features * 2**i, skip_features_start * 2**i, style_size))
         self.vae_transformations = nn.ModuleList()
         for i in range(num_skip_downsamplings):
-            self.vae_transformations.append(VaeTransformBlock(skip_features_start * 2**i, skip_features_start * 2**i))
+            self.vae_transformations.append(VaeTransformBlock(skip_features_start * 2**i, skip_features_start))
         self.vae_transformations.append(VaeTransformBlock(ds_start_features * 2**num_skip_downsamplings,
                                                           skip_features_start * 2**num_skip_downsamplings))
 

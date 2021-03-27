@@ -55,7 +55,7 @@ class StyledDecoder(nn.Module):
                                           5, style_size, "relu")
         self.upsamplings = nn.ModuleList()
         for i in reversed(range(num_skip_downsamplings)):
-            self.upsamplings.append(StyledSkipUpsampling(us_end_features * 2 ** (i + 1), skip_features_start * 2 ** i, style_size))
+            self.upsamplings.append(StyledSkipUpsampling(us_end_features * 2 ** (i + 1), skip_features_start, style_size))
 
     def forward(self, zs, style):
         x = self.start_transform(zs[-1], style)
